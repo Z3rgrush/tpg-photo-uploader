@@ -62,6 +62,7 @@ async function startUpload() {
   const fd = new FormData();
   fd.append('file', selectedFile);
   fd.append('title', titleInput.value.trim());
+  fd.append('book_title', document.getElementById('asset-book-title').value.trim());
 
   try {
     const res  = await fetch('/api/upload', { method: 'POST', body: fd });
@@ -122,6 +123,7 @@ function resetForm() {
   selectedFile = null;
   fileInput.value = '';
   titleInput.value = '';
+  document.getElementById('asset-book-title').value = '';
   dropZone.classList.remove('has-file', 'drag-over');
   document.getElementById('drop-icon').classList.remove('hidden');
   document.getElementById('preview-wrap').classList.add('hidden');

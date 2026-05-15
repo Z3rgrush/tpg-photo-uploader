@@ -1,7 +1,5 @@
 import os
 import uuid
-import random
-import string
 import json
 from datetime import datetime
 
@@ -61,7 +59,8 @@ def get_sheet():
 def append_to_sheet(data: dict):
     sheet = get_sheet()
     row = [
-        data.get('title', ''),
+        data.get('title', ''),       # ISBN
+        data.get('book_title', ''),  # Title
         data.get('meta_name', ''),
         data.get('hash') or data.get('id', ''),
         data.get('type', ''),
@@ -95,20 +94,19 @@ def upload():
         return jsonify({'error': 'No file provided'}), 400
 
     file  = request.files['file']
-    title = request.form.get('title', '').strip() or file.filename
+    title      = request.form.get('title', '').strip() or file.filename
+    book_title = request.form.get('book_title', '').strip()
 
     ext = os.path.splitext(file.filename)[1].lower()
     if ext not in ALLOWED_EXTENSIONS:
         return jsonify({'error': f'Unsupported file type: {ext}'}), 400
-
-    suffix = ''.join(random.choices(string.ascii_letters + string.digits, k=5))
-    title  = f'{title}_{suffix}'
 
     tmp_path = os.path.join(UPLOAD_DIR, f'{uuid.uuid4()}{ext}')
     file.save(tmp_path)
 
     try:
         result = get_api().upload(file_path=tmp_path, title=title)
+        result['book_title'] = book_title
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:
