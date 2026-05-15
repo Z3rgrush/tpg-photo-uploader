@@ -29,13 +29,12 @@
       <div class="page-header">
         <div>
           <h1>Upload Photo or Video</h1>
-          <p class="subtitle">Upload an image or video to your Meta ad account and receive its asset ID.</p>
+          <p class="subtitle">Upload an asset to Meta and track its filename, hash, and your internal title.</p>
         </div>
       </div>
 
+      <!-- Upload card -->
       <div class="card upload-card">
-
-        <!-- Drop zone -->
         <div class="drop-zone" id="drop-zone">
           <div class="drop-icon" id="drop-icon">
             <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -52,20 +51,21 @@
             </div>
           </div>
           <p class="drop-label" id="drop-label">Drag &amp; drop your file here</p>
-          <p class="drop-hint" id="drop-hint">JPG, PNG, GIF, MP4, MOV and more · Max 4 GB</p>
+          <p class="drop-hint" id="drop-hint">JPG, PNG, GIF, MP4, MOV and more</p>
           <input type="file" id="file-input" accept="image/*,video/*" style="display:none"/>
           <button class="btn-secondary" id="btn-choose" onclick="document.getElementById('file-input').click()">Choose File</button>
         </div>
 
-        <!-- Name field -->
         <div class="field-group" style="margin-top:1.5rem">
-          <label for="asset-name">Asset Name <span class="required">*</span></label>
-          <input type="text" id="asset-name" placeholder="e.g. Summer Campaign Hero Image"/>
+          <label for="asset-title">Title <span class="required">*</span></label>
+          <input type="text" id="asset-title" placeholder="e.g. Summer Campaign Hero"/>
         </div>
 
         <div class="card-actions">
           <button class="btn-primary" id="btn-upload" disabled>Upload to Meta &rarr;</button>
         </div>
+
+        <div class="error-box hidden" id="upload-error"></div>
       </div>
 
       <!-- Progress -->
@@ -76,25 +76,33 @@
         </div>
       </div>
 
-      <!-- Result -->
-      <div class="card result-card hidden" id="upload-result">
-        <div class="result-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <!-- Upload log table -->
+      <div id="history-section" class="hidden">
+        <div class="results-header">
+          <h2 class="section-title">Uploaded This Session</h2>
+          <a id="sheet-link" class="btn-sheet-link" href="#" target="_blank">Open Sheet ↗</a>
         </div>
-        <h2 class="result-title">Upload Successful</h2>
-        <p class="result-subtitle" id="result-subtitle"></p>
-
-        <div class="result-fields" id="result-fields"></div>
-
-        <button class="btn-secondary" onclick="resetUpload()" style="margin-top:1.5rem">Upload Another</button>
+        <div class="card" style="padding:0;overflow:hidden">
+          <div class="table-wrap">
+            <table id="history-table">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Meta Filename</th>
+                  <th>Hash / ID</th>
+                  <th>Type</th>
+                </tr>
+              </thead>
+              <tbody id="history-tbody"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
-
-      <!-- Error -->
-      <div class="error-box hidden" id="upload-error"></div>
 
     </main>
   </div>
 
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
