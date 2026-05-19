@@ -1,4 +1,6 @@
 import os
+import json
+from datetime import datetime, timedelta
 import requests as http
 
 from facebook_business.api import FacebookAdsApi
@@ -7,6 +9,9 @@ from facebook_business.adobjects.adimage import AdImage
 from facebook_business.adobjects.advideo import AdVideo
 
 VIDEO_EXTENSIONS = {'.mp4', '.mov', '.avi', '.mkv', '.wmv', '.m4v', '.webm'}
+
+GRAPH_BASE = 'https://graph.facebook.com/v19.0'
+INSIGHT_FIELDS = 'ad_id,ad_name,adset_name,campaign_name,impressions,clicks,spend,inline_link_click_ctr,ctr,cpc,cpm,reach,frequency'
 
 
 def _is_video(path: str) -> bool:
@@ -86,9 +91,71 @@ class UploaderAPI:
     def _get_video_name(self, video_id: str) -> str:
         try:
             resp = http.get(
-                f'https://graph.facebook.com/v19.0/{video_id}',
+                f'{GRAPH_BASE}/{video_id}',
                 params={'fields': 'title', 'access_token': self._token},
             ).json()
             return resp.get('title', '')
         except Exception:
             return ''
+
+    # ------------------------------------------------------------------
+    # Campaign / Ad search
+    # ------------------------------------------------------------------
+
+    def search_by_title(self, query: str, days: int = 30) -> dict:
+        """Return ad-level KPIs for active campaigns whose name contains query."""
+        campaigns = self._get_active_campaigns_containing(query)
+        if not campaigns:
+            return {'campaigns': [], 'ads': [], 'query': query}
+
+        campaign_ids = [c['id'] for c in campaigns]
+        ads = self._get_ad_insights(campaign_ids, days)
+        return {
+            'query': query,
+            'campaigns': campaigns,
+            'ads': ads,
+            'date_range_days': days,
+        }
+
+    def _get_active_campaigns_containing(self, query: str) -> list:
+        filtering = json.dumps([{'field': 'name', 'operator': 'CONTAIN', 'value': query}])
+        campaigns = []
+        url = f'{GRAPH_BASE}/{self.account_id}/campaigns'
+        params = {
+            'fields': 'id,name,status,effective_status',
+            'effective_status': '["ACTIVE"]',
+            'filtering': filtering,
+            'limit': 200,
+            'access_token': self._token,
+        }
+        while url:
+            resp = http.get(url, params=params).json()
+            if 'error' in resp:
+                raise RuntimeError(resp['error'].get('message', str(resp['error'])))
+            campaigns.extend(resp.get('data', []))
+            url = resp.get('paging', {}).get('next')
+            params = {}  # next URL already has params baked in
+        return campaigns
+
+    def _get_ad_insights(self, campaign_ids: list, days: int) -> list:
+        since = (datetime.utcnow() - timedelta(days=days)).strftime('%Y-%m-%d')
+        until = datetime.utcnow().strftime('%Y-%m-%d')
+        filtering = json.dumps([{'field': 'campaign.id', 'operator': 'IN', 'value': campaign_ids}])
+        ads = []
+        url = f'{GRAPH_BASE}/{self.account_id}/insights'
+        params = {
+            'level': 'ad',
+            'fields': INSIGHT_FIELDS,
+            'time_range': json.dumps({'since': since, 'until': until}),
+            'filtering': filtering,
+            'limit': 500,
+            'access_token': self._token,
+        }
+        while url:
+            resp = http.get(url, params=params).json()
+            if 'error' in resp:
+                raise RuntimeError(resp['error'].get('message', str(resp['error'])))
+            ads.extend(resp.get('data', []))
+            url = resp.get('paging', {}).get('next')
+            params = {}
+        return ads

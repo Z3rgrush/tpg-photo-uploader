@@ -88,6 +88,20 @@ def static_files(filename):
     return send_from_directory('static', filename)
 
 
+@app.route('/api/search', methods=['POST'])
+def search():
+    body = request.get_json(force=True, silent=True) or {}
+    query = (body.get('query') or '').strip()
+    days  = int(body.get('days', 30))
+    if not query:
+        return jsonify({'error': 'query is required'}), 400
+    try:
+        result = get_api().search_by_title(query, days=days)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    return jsonify(result)
+
+
 @app.route('/api/upload', methods=['POST'])
 def upload():
     if 'file' not in request.files:
